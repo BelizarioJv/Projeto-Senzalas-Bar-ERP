@@ -107,6 +107,10 @@ export class SaleController {
         throw new HttpError(401, "Usuário não autenticado ou inválido");
       }
 
+      if (!body.products || body.products.length === 0) {
+        throw new HttpError(400, "A venda deve conter pelo menos um produto");
+      }
+
       const userId = req.user;
 
       const subtotal = body.products.reduce(
@@ -189,14 +193,23 @@ export class SaleController {
           }
 
           // Atualizando a quantidade do produto no estoque
-          await tx.product.update({
-            where: { id: p.productId },
+          const updatedProduct = await tx.product.updateMany({
+            where: {
+              id: p.productId,
+              currentQuantity: {
+                gte: p.quantity,
+              },
+            },
             data: {
               currentQuantity: {
                 decrement: p.quantity,
               },
             },
           });
+
+          if (updatedProduct.count !== 1) {
+            throw new HttpError(400, "Estoque insuficiente");
+          }
 
           // Criando movimentação de estoque para auditoria
           await tx.stockMovement.create({

@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ChevronDown,
   Users,
+  ScrollText,
 } from "lucide-react";
 import {
   Sidebar,
@@ -276,6 +277,65 @@ export function AppSidebar() {
                       href={`/dashboard`}
                       className="inline-flex items-center w-full gap-2 px-2 py-1 bg-accent text-accent-foreground rounded-sm hover:bg-gray-30 transition">
                       Dashboard
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+          </ul>
+        </SidebarGroup>
+
+        {/* REPORTS */}
+        <SidebarGroup>
+          <ul className="space-y-2">
+            <li>
+              <button
+                onClick={() => toggleMenu("relatorios")}
+                className="w-full flex items-center justify-between gap-2 p-2 rounded hover:bg-gray-400 transition">
+                <span className="flex items-center gap-2">
+                  <ScrollText size={20} />
+                  {open && "Relatórios"}
+                </span>
+                {open && (
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform ${
+                      expandedMenu === "relatorios" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
+              </button>
+              {expandedMenu === "relatorios" && open && (
+                <ul className="mt-2 ml-4 space-y-1 border-l border-gray-500 pl-3">
+                  <li>
+                    <Link
+                      href={`/relatorios/monthSale`}
+                      className="inline-flex items-center w-full gap-2 px-2 py-1 bg-accent text-accent-foreground rounded-sm hover:bg-gray-30 transition">
+                      Vendas Mensais
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link
+                      href={`/relatorios/monthPurchase`}
+                      className="inline-flex items-center w-full gap-2 px-2 py-1 bg-accent text-accent-foreground rounded-sm hover:bg-gray-30 transition">
+                      Compras Mensais
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link
+                      href={`/relatorios/monthProfit`}
+                      className="inline-flex items-center w-full gap-2 px-2 py-1 bg-accent text-accent-foreground rounded-sm hover:bg-gray-30 transition">
+                      Lucro Mensal
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link
+                      href={`/relatorios/topProducts`}
+                      className="inline-flex items-center w-full gap-2 px-2 py-1 bg-accent text-accent-foreground rounded-sm hover:bg-gray-30 transition">
+                      Produtos Mais Vendidos
                     </Link>
                   </li>
                 </ul>
