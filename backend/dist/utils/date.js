@@ -8,6 +8,11 @@ export function getStartOfMonth() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
 }
+// Fim do mês
+export function getEndOfMonth() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0);
+}
 // Retorna a data exata do 5º dia útil do mês atual
 export function getFifthBusinessDayOfCurrentMonth() {
     const now = new Date();

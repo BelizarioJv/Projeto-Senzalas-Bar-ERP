@@ -17,6 +17,9 @@ export interface ProductData {
   currentQuantity: number;
   minimumQuantity: number;
   status: "ATIVO" | "INATIVO";
+  imageKey: string | null;
+  imageUrl: string | null;
+  imageType: string | null;
   createdBy: number; // ID do usuário
   createdAt: string;
   updatedAt: string;

@@ -61,6 +61,10 @@ export const ProductResponseSchema = z
 
     status: productStatus,
 
+    imageKey: z.string().nullable(),
+    imageUrl: z.string().nullable(),
+    imageType: z.string().nullable(),
+
     createdBy: z.number().int().nullable().openapi({
       example: 1,
       description: "ID do usuário que criou o produto",

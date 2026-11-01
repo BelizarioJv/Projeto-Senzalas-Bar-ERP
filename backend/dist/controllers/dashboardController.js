@@ -1,5 +1,5 @@
 import { prisma } from "../database/prisma.js";
-import { MetaStockMovementRequestSchema } from "./schemas/MovementStockRequestSchema.js";
+import { MetaStockMovementRequestSchema } from "../docs/schemas/MovementStockRequestSchema.js";
 import { getStartOfToday, getStartOfMonth } from "../utils/date.js";
 export class DashboardController {
     //Busca de informaçaoes para mostrar no Dashboard principal , total de produtos , produtos com abaixo do estoque minimo , vendas de hoje e do mes

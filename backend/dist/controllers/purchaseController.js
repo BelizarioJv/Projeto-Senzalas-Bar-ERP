@@ -2,7 +2,7 @@ import { prisma } from "../database/prisma.js";
 import { Prisma } from "@prisma/client";
 import { HttpError } from "../errors/HttpError.js";
 import { getStartOfMonth } from "../utils/date.js";
-import { PurchaseRequestSchema, MetaPurchaseRequestSchema, } from "./schemas/PurchaseResquestSchema.js";
+import { PurchaseRequestSchema, MetaPurchaseRequestSchema, } from "../docs/schemas/PurchaseRequestSchema.js";
 export class PurchaseController {
     //Buscar compras com paginaçao e filtros
     index = async (req, res, next) => {

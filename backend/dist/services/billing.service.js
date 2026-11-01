@@ -22,7 +22,7 @@ export class BillingService {
                         error: "Telefone não informado",
                     });
                 }
-                const message = `Olá, ${customer.name}! Lembramos que você possui um saldo devedor de R$ ${customer.debtBalance}.`;
+                const message = `Olá, ${customer.name}! Lembramos que você possui um saldo devedor de R$ ${customer.debtBalance}. Assim que possivel passar aqui no bar para tomar uma com nós e acerta a contar ou se preferir fazer o pix para 31991615017`;
                 try {
                     await this.zapiService.sendMessage(customer.phone, message);
                     return { clientId: customer.id, status: "SUCCESS" };

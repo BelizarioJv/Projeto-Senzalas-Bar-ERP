@@ -1,6 +1,7 @@
 // app/produto/[id]/page.tsx
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { notFound } from "next/navigation";
@@ -9,6 +10,8 @@ import { useParams } from "next/navigation";
 import { useDeleteProduct } from "@/hooks/products/useDeleteProducts";
 import { AppDialog } from "@/components/layout/Dialog";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getProductImage } from "@/services/product.service";
 
 export default function ProdutoPage() {
   const router = useRouter();
@@ -18,6 +21,19 @@ export default function ProdutoPage() {
   const { data: product, isPending, error } = useGetProduct(id);
 
   const deleteMutation = useDeleteProduct();
+
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!id || !product?.imageKey) {
+      return;
+    }
+
+    getProductImage(Number(id))
+      .then(setImageUrl)
+      .catch((error) => {
+        console.error("Erro ao carregar imagem do produto:", error);
+      });
+  }, [id, product?.imageKey]);
 
   async function deleteProduct(id: string) {
     try {
@@ -41,21 +57,43 @@ export default function ProdutoPage() {
     <div className="max-w-5xl mx-auto p-6">
       <div className="bg-card text-card-foreground border rounded-2xl shadow-lg overflow-hidden">
         {/* Header */}
-        <div className="border-b p-8 ">
-          <Link href={`/produtos`} className="">
-            <ArrowLeft />
+        <div className="relative border-b p-8">
+          <Link
+            href="/produtos"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para produtos
           </Link>
-          <h1 className="text-4xl p-4 font-bold">{product.name}</h1>
 
-          <div className="flex gap-3 mt-4">
-            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-              {product.category}
-            </span>
+          <div className="grid items-center gap-8 md:grid-cols-[1fr_320px]">
+            <div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                  {product.category}
+                </span>
 
-            {product.brand && (
-              <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm">
-                {product.brand}
-              </span>
+                {product.brand && (
+                  <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm">
+                    {product.brand}
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-4xl font-bold">{product.name}</h1>
+            </div>
+
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={product.name}
+                width={300}
+                height={300}
+                className="h-72 w-full rounded-xl object-cover shadow-md md:w-72"
+              />
+            ) : (
+              <div className="w-72 h-72 bg-gray-200 rounded-lg flex items-center justify-center">
+                <span className="text-gray-500">Sem imagem</span>
+              </div>
             )}
           </div>
         </div>

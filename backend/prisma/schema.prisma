@@ -105,7 +105,10 @@ model Product {
   currentQuantity Int               @default(0)
   minimumQuantity Int               @default(0)
   status          ProductStatus    @default(ATIVO)
-  category        ProductsCategory  
+  category        ProductsCategory 
+  imageKey        String?
+  imageUrl        String?
+  imageType       String? 
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   createdBy       Int?

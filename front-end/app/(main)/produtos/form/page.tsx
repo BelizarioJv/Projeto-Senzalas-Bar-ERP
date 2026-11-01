@@ -1,4 +1,6 @@
 "use client";
+import { ChangeEvent, useState } from "react";
+import { uploadProductImage } from "@/services/product.service";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -12,6 +14,7 @@ import { PackageSearch } from "lucide-react";
 import { useCreateProduct } from "@/hooks/products/useCreateProducts";
 
 export default function CreateProductPage() {
+  const [image, setImage] = useState<File | null>(null);
   const router = useRouter();
   const {
     register,
@@ -20,18 +23,30 @@ export default function CreateProductPage() {
   } = useForm<ProductFormData>();
 
   const createProduct = useCreateProduct();
-
   async function onSubmit(data: ProductFormData) {
     try {
-      await createProduct.mutateAsync(data);
+      const createdProduct = await createProduct.mutateAsync(data);
 
-      alert("Produto cadastrado com sucesso!");
-      toast.success("Produto cadastrado com sucesso");
+      if (image) {
+        await uploadProductImage(createdProduct.id, image);
+      }
+
+      toast.success("Produto cadastrado com sucesso!");
       router.replace("/produtos");
-    } catch (error: any) {
-      console.error("Erro ao cadastrar produto:", error);
-      toast.error("Não foi possível cadastrar o produto. Tente novamente.");
+    } catch (error) {
+      console.error("Erro no cadastro:", error);
+
+      toast.error(
+        image
+          ? "Produto cadastrado ou parcialmente processado. Verifique o upload da imagem."
+          : "Não foi possível cadastrar o produto.",
+      );
     }
+  }
+
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setImage(file);
   }
 
   return (
@@ -162,6 +177,17 @@ export default function CreateProductPage() {
                 id="description"
                 placeholder="Descrição do produto..."
                 {...register("description")}
+              />
+            </div>
+
+            {/* Imagem */}
+            <div>
+              <Label htmlFor="image">Imagem do produto</Label>
+              <Input
+                id="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageChange}
               />
             </div>
 

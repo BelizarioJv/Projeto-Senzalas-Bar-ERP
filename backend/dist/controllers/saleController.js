@@ -1,7 +1,7 @@
 import { prisma } from "../database/prisma.js";
 import { HttpError } from "../errors/HttpError.js";
 import { getStartOfMonth } from "../utils/date.js";
-import { SaleRequestSchema, MetaSaleRequestSchema, } from "./schemas/SaleRequestSchema.js";
+import { SaleRequestSchema, MetaSaleRequestSchema, } from "../docs/schemas/SaleRequestSchema.js";
 export class SaleController {
     //Buscar todos as vendas
     index = async (req, res, next) => {
@@ -90,6 +90,9 @@ export class SaleController {
             if (!req.user || typeof req.user !== "number") {
                 throw new HttpError(401, "Usuário não autenticado ou inválido");
             }
+            if (!body.products || body.products.length === 0) {
+                throw new HttpError(400, "A venda deve conter pelo menos um produto");
+            }
             const userId = req.user;
             const subtotal = body.products.reduce((acc, product) => acc + product.quantity * product.price, 0);
             const discountPercent = Number(body.discountPercent || 0);
@@ -154,14 +157,22 @@ export class SaleController {
                         throw new HttpError(400, `Estoque insuficiente para o produto "${product.name}". Atual: ${product.currentQuantity}, Solicitado: ${p.quantity}`);
                     }
                     // Atualizando a quantidade do produto no estoque
-                    await tx.product.update({
-                        where: { id: p.productId },
+                    const updatedProduct = await tx.product.updateMany({
+                        where: {
+                            id: p.productId,
+                            currentQuantity: {
+                                gte: p.quantity,
+                            },
+                        },
                         data: {
                             currentQuantity: {
                                 decrement: p.quantity,
                             },
                         },
                     });
+                    if (updatedProduct.count !== 1) {
+                        throw new HttpError(400, "Estoque insuficiente");
+                    }
                     // Criando movimentação de estoque para auditoria
                     await tx.stockMovement.create({
                         data: {

@@ -1,4 +1,5 @@
 import { api } from "./api";
+import axios from "axios";
 import { ProductData, ProductFormData, ProductFilters } from "@/types/product";
 import { handleAxiosError } from "@/utils/handleAxiosError";
 import { MetaData } from "@/types/metaDataPage";
@@ -33,12 +34,58 @@ export async function showProduct(id: string): Promise<ProductData> {
 }
 
 // Criar produto
-export async function createProduct(data: ProductFormData) {
+export async function createProduct(
+  data: ProductFormData,
+): Promise<ProductData> {
   try {
-    const response = await api.post<ProductFormData>("/products", data);
+    const response = await api.post<ProductData>("/products", data);
     return response.data;
   } catch (error) {
     handleAxiosError(error);
+  }
+}
+
+//upload image s3
+export async function uploadProductImage(productId: number, file: File) {
+  const formData = new FormData();
+
+  formData.append("image", file);
+
+  try {
+    const response = await api.post(`/products/${productId}/image`, formData);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(
+          `Erro ao enviar imagem: ${error.response.data.message}`,
+        );
+      }
+
+      throw new Error(`Erro ao enviar imagem: ${error.message}`);
+    }
+  }
+}
+
+//Buscar imagem do produto
+export async function getProductImage(productId: number): Promise<string> {
+  try {
+    const response = await api.get<{ imageUrl: string }>(
+      `/products/${productId}/image-url`,
+    );
+    return response.data.imageUrl;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(
+          `Erro ao buscar imagem do produto: ${error.response.data.message}`,
+        );
+      }
+
+      throw new Error(`Erro ao buscar imagem do produto: ${error.message}`);
+    }
+
+    throw error;
   }
 }
 

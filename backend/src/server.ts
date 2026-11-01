@@ -3,6 +3,7 @@
 import "dotenv/config";
 import { loginRouter } from "./routes/loginRoutes.js";
 import { productRouter } from "./routes/productRoutes.js";
+import { productImageRouter } from "./routes/productImageS3Routes.js";
 import { billingRouter } from "./routes/billingRoutes.js";
 import { supplierRouter } from "./routes/supplierRoutes.js";
 import { customerRouter } from "./routes/customerRoutes.js";
@@ -32,6 +33,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 // ---------------------------------
 app.use("/login", loginRouter);
 app.use("/products", authMiddleware, productRouter);
+app.use("/products", authMiddleware, productImageRouter);
 app.use("/customer", authMiddleware, customerRouter);
 app.use("/supplier", authMiddleware, supplierRouter);
 app.use("/purchase", authMiddleware, purchaseRouter);

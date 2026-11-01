@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { ChangeEvent, useState } from "react";
+import { uploadProductImage } from "@/services/product.service";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useEffect } from "react";
@@ -40,6 +42,8 @@ export default function UpdateProductPage() {
     values: product,
   });
 
+  const [image, setImage] = useState<File | null>(null);
+
   useEffect(() => {
     if (product) {
       reset(product);
@@ -50,6 +54,10 @@ export default function UpdateProductPage() {
     try {
       await updateMutation.mutateAsync({ id, data });
 
+      if (image) {
+        await uploadProductImage(Number(id), image);
+      }
+
       toast.success("Produto atualizado com sucesso!");
       router.replace("/produtos");
     } catch (error) {
@@ -58,6 +66,11 @@ export default function UpdateProductPage() {
     } finally {
       reset(data);
     }
+  }
+
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setImage(file);
   }
 
   return (
@@ -185,6 +198,17 @@ export default function UpdateProductPage() {
               <Label htmlFor="description">Descrição</Label>
 
               <Textarea id="description" {...register("description")} />
+            </div>
+
+            {/* Imagem */}
+            <div>
+              <Label htmlFor="image">Imagem do produto</Label>
+              <Input
+                id="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageChange}
+              />
             </div>
 
             {/* Submit */}
