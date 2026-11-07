@@ -21,6 +21,7 @@ import { openApiDocument } from "./docs/swagger.js";
 import express from "express";
 import cors from "cors";
 import { reportsRouter } from "./routes/reportsRoutes.js";
+import { deliveryRouter } from "./routes/deliveryRoutes.js";
 
 //Inicalizaçao do server
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 app.use("/login", loginRouter);
 app.use("/products", authMiddleware, productRouter);
 app.use("/products", authMiddleware, productImageRouter);
+// app.use ("/integration", authMiddleware, billingRouter);
 app.use("/customer", authMiddleware, customerRouter);
 app.use("/supplier", authMiddleware, supplierRouter);
 app.use("/purchase", authMiddleware, purchaseRouter);
@@ -41,6 +43,7 @@ app.use("/sale", authMiddleware, saleRouter);
 app.use("/payments", authMiddleware, paymentRouter);
 app.use("/dashboard", authMiddleware, dashboardRouter);
 app.use("/reports", authMiddleware, reportsRouter);
+app.use("/delivery", authMiddleware, deliveryRouter);
 app.use("/apiBilling", billingRouter);
 
 // Middleware de erro
