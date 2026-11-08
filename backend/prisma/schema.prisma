@@ -176,6 +176,8 @@ model Sale {
   updatedAt     DateTime         @updatedAt
   userId        Int
   customerId    Int?
+  idempotencyKey String?         @unique
+  idempotencyHash String?
 
 
   //Relacionamentos

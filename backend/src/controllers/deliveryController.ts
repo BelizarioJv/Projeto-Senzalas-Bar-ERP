@@ -1,15 +1,43 @@
 import { RequestHandler } from "express";
+import { createHash } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { HttpError } from "../errors/HttpError.js";
 import { prisma } from "../database/prisma.js";
-import { DeliverySaleRequestSchema } from "../docs/schemas/DeliverySaleRequestSchema.js";
+import {
+  DeliverySaleRequestSchema,
+  deliveryIdempotencyKeySchema,
+} from "../docs/schemas/DeliverySaleRequestSchema.js";
 
 export class DeliveryController {
   create: RequestHandler = async (req, res, next) => {
     try {
       const body = DeliverySaleRequestSchema.parse(req.body);
+      const idempotencyKey = deliveryIdempotencyKeySchema.parse(
+        req.header("Idempotency-Key"),
+      );
+      const requestHash = createHash("sha256")
+        .update(JSON.stringify(body))
+        .digest("hex");
 
       if (typeof req.user !== "number") {
         throw new HttpError(401, "Usuário não autenticado ou inválido.");
+      }
+
+      const existingSale = await prisma.sale.findUnique({
+        where: { idempotencyKey },
+        include: { products: true, customer: true },
+      });
+
+      if (existingSale) {
+        if (existingSale.idempotencyHash !== requestHash) {
+          throw new HttpError(
+            409,
+            "Esta chave de idempotência já foi usada com dados diferentes.",
+          );
+        }
+
+        res.status(200).json(existingSale);
+        return;
       }
 
       const productIds = body.products.map((product) => product.productId);
@@ -81,29 +109,54 @@ export class DeliveryController {
           0,
         );
 
-        const createdSale = await tx.sale.create({
-          data: {
-            payment: body.payment,
-            observation: body.observation,
-            customerId: body.customerId ?? null,
-            userId: req.user!,
-            discountPercent: 0,
-            discountValue: 0,
-            total,
-            products: {
-              create: saleItems.map((item) => ({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.price,
-                subtotal: item.subtotal,
-              })),
+        let createdSale;
+
+        try {
+          createdSale = await tx.sale.create({
+            data: {
+              payment: body.payment,
+              observation: body.observation,
+              customerId: body.customerId ?? null,
+              userId: req.user!,
+              discountPercent: 0,
+              discountValue: 0,
+              total,
+              idempotencyKey,
+              idempotencyHash: requestHash,
+              products: {
+                create: saleItems.map((item) => ({
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  price: item.price,
+                  subtotal: item.subtotal,
+                })),
+              },
             },
-          },
-          include: {
-            products: true,
-            customer: true,
-          },
-        });
+            include: {
+              products: true,
+              customer: true,
+            },
+          });
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002"
+          ) {
+            const concurrentSale = await tx.sale.findUnique({
+              where: { idempotencyKey },
+              include: { products: true, customer: true },
+            });
+
+            if (
+              concurrentSale &&
+              concurrentSale.idempotencyHash === requestHash
+            ) {
+              return concurrentSale;
+            }
+          }
+
+          throw error;
+        }
 
         for (const item of body.products) {
           const updatedProduct = await tx.product.updateMany({
