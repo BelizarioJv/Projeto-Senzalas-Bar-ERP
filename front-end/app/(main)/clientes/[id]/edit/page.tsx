@@ -46,7 +46,7 @@ export default function EditCustomerPage() {
 
       toast.success("Cadastro do cliente atualizado com sucesso!");
       router.replace(`/customers/${id}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erro ao atualizar cliente:", err);
       toast.error("Não foi possível atualizar o cliente. Tente novamente.");
     }

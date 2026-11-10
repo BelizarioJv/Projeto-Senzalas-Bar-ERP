@@ -76,7 +76,7 @@ export default function ShowPurchasePage() {
           </thead>
 
           <tbody>
-            {purchase.products.map((product: any) => (
+            {purchase.products.map((product) => (
               <tr key={product.id} className="border-b">
                 <td className="p-2">{product.product.name}</td>
 

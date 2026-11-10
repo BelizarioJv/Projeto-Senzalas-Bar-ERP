@@ -28,7 +28,7 @@ export default function CreateCustomerPage() {
 
       toast.success("Cliente cadastrado com sucesso!");
       router.replace("/clientes");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao cadastrar cliente:", error);
       toast.error("Não foi possível cadastrar o cliente. Tente novamente.");
     }

@@ -14,10 +14,19 @@ export interface PurchaseData {
   };
   createdBy: string;
   payment: "DINHEIRO" | "PIX" | "CARTAO_CREDITO" | "CARTAO_DEBITO";
-  products: ProductData[];
+  products: PurchaseProductData[];
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PurchaseProductData {
+  id: number;
+  quantity: number;
+  price: number | string;
+  subtotal: number | string;
+  product: ProductData;
+}
+
 export interface PurchaseProductForm {
   productId: number;
   quantity: number;

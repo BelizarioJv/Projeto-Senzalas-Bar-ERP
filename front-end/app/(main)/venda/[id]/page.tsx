@@ -89,7 +89,7 @@ export default function ShowSalePage() {
           </thead>
 
           <tbody>
-            {sale.products.map((product: any) => (
+            {sale.products.map((product) => (
               <tr key={product.id} className="border-b">
                 <td className="p-2">{product.product.name}</td>
 

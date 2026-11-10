@@ -9,9 +9,8 @@ import { useParams } from "next/navigation";
 import { useDeleteSupplier } from "@/hooks/supplier/useDeleteSupplier";
 import { AppDialog } from "@/components/layout/Dialog";
 import { ArrowLeft } from "lucide-react";
-import { serialize } from "v8";
 
-export default function fornecedorPage() {
+export default function SupplierPage() {
   const router = useRouter();
   //Buscando fornecedor pelo Id
   const params = useParams();

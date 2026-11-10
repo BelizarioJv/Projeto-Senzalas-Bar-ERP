@@ -1,4 +1,5 @@
 "use client";
+import { isAxiosError } from "axios";
 import { LoginForm } from "@/types/login";
 import { useRouter } from "next/navigation";
 import { useLoginForm } from "@/hooks/login/useLogin";
@@ -41,10 +42,12 @@ export default function LoginPage() {
         toast.success("Bem-vindo ao Senzalas Bar!");
         router.replace("/");
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         console.error("Erro ao fazer login", error);
         toast.error(
-          error?.response?.data?.message || "Não foi possível fazer login",
+          (isAxiosError<{ message?: string }>(error)
+            ? error.response?.data?.message
+            : undefined) || "Não foi possível fazer login",
         );
       },
     });

@@ -27,7 +27,7 @@ export default function CreateProductPage() {
 
       toast.success("Fornecedor cadastrado com sucesso");
       router.replace("/fornecedores");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao cadastrar Fornecedor:", error);
       toast.error("Não foi possível cadastrar o Fornecedor. Tente novamente.");
     }

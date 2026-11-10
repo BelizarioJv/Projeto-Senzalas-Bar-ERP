@@ -8,7 +8,7 @@ export interface SaleData {
   discountPercent: number;
   discountValue: number;
   observation: string;
-  products: ProductData[];
+  products: SaleProductData[];
   createdAt: string;
   updatedAt: string;
   user: {
@@ -19,6 +19,14 @@ export interface SaleData {
     id: number;
     name: string;
   } | null;
+}
+
+export interface SaleProductData {
+  id: number;
+  quantity: number;
+  price: number | string;
+  subtotal: number | string;
+  product: ProductData;
 }
 
 export interface SaleProductForm {
