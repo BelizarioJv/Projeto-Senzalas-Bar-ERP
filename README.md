@@ -156,6 +156,40 @@ Basta executar:
 docker compose up --build
 ```
 
+### Segurança da API
+
+O backend aplica cabeçalhos de segurança com Helmet, limita a API a 300 requisições
+por IP a cada 15 minutos e limita tentativas malsucedidas de login a 10 no mesmo
+período. Em produção com múltiplas instâncias, configure um armazenamento
+compartilhado para o rate limiter.
+
+Configure `CORS_ORIGINS` no ambiente do backend como uma lista separada por
+vírgulas de origens confiáveis, sem barra final, por exemplo:
+
+```env
+CORS_ORIGINS=https://app.exemplo.com,https://delivery.exemplo.com
+```
+
+Sem essa variável, somente as origens locais `localhost:3000` e `localhost:3001`
+são permitidas. CORS restringe o acesso de navegadores; não substitui autenticação
+nem impede clientes que chamem a API diretamente. Os corpos JSON são limitados a
+1 MB, e o upload de imagens aceita um arquivo de até 5 MB com limites adicionais
+para campos e partes do formulário.
+
+### Testes do backend
+
+Os testes de integração HTTP ficam em `backend/tests/integration` e usam Vitest
+com Supertest. Cobrem login e as rotas de vendas, compras, produtos e
+fornecedores, incluindo validações, operações de estoque e respostas para
+registros inexistentes. O Prisma é mockado, então não é necessário iniciar
+PostgreSQL para executá-los.
+
+```bash
+cd backend
+npm test
+npm run test:watch
+```
+
 
 ## 🎯 Objetivos do Projeto
 

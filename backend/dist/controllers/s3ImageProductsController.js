@@ -7,6 +7,10 @@ export const uploadProductImageMiddleware = multer({
     limits: {
         fileSize: 5 * 1024 * 1024,
         files: 1,
+        fieldNameSize: 100,
+        fieldSize: 16 * 1024,
+        fields: 4,
+        parts: 5,
     },
     fileFilter: (_req, file, callback) => {
         const allowed = ["image/jpeg", "image/png", "image/webp"];

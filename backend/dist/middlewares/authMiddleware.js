@@ -1,10 +1,13 @@
 import jwt from "jsonwebtoken";
-const secretKey = process.env.JWT_SECRET;
 export function authMiddleware(req, res, next) {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
     if (!token) {
         return res.status(401).json({ error: "Token não fornecido" });
+    }
+    const secretKey = process.env.JWT_SECRET;
+    if (!secretKey) {
+        return res.status(500).json({ error: "Configuração de autenticação ausente" });
     }
     jwt.verify(token, secretKey, (err, decoded) => {
         if (err || !decoded) {

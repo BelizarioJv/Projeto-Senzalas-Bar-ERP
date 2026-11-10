@@ -16,26 +16,24 @@ import { errorHandler } from "./middlewares/errorMiddleware.js";
 import { initMonthlyBillingJob } from "./jobs/monthlyBilling.job.js";
 import swaggerUi from "swagger-ui-express";
 import { openApiDocument } from "./docs/swagger.js";
+import {
+  configureServer,
+  loginRateLimiter,
+} from "./config/server.config.js";
 
-// ---------------------------------
 import express from "express";
-import cors from "cors";
 import { reportsRouter } from "./routes/reportsRoutes.js";
 import { deliveryRouter } from "./routes/deliveryRoutes.js";
 
-//Inicalizaçao do server
 const app = express();
 
-//Configuraçao do server
-app.use(express.json());
-app.use(cors());
+configureServer(app);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 // ---------------------------------
-app.use("/login", loginRouter);
+app.use("/login", loginRateLimiter, loginRouter);
 app.use("/products", authMiddleware, productRouter);
 app.use("/products", authMiddleware, productImageRouter);
-// app.use ("/integration", authMiddleware, billingRouter);
 app.use("/customer", authMiddleware, customerRouter);
 app.use("/supplier", authMiddleware, supplierRouter);
 app.use("/purchase", authMiddleware, purchaseRouter);
