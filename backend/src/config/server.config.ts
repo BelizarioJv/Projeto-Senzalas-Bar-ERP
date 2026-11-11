@@ -21,6 +21,7 @@ export const loginRateLimiter = rateLimit({
 });
 
 export function configureServer(app: Express): void {
+  app.set("trust proxy", 1);
   app.use(helmet());
   app.use(
     cors({

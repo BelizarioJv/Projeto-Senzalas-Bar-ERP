@@ -140,21 +140,38 @@ Principais entidades:
 Relacionamentos modelados utilizando Prisma ORM e PostgreSQL.
 
 ---
-## 🐳 Docker
+## 🐳 Docker Compose e Nginx
 
-O projeto está totalmente containerizado utilizando Docker Compose.
+O Compose do ERP inicia PostgreSQL, duas instâncias do backend e o Nginx. O
+Nginx é o único serviço HTTP publicado no host e distribui as requisições entre
+as instâncias do backend usando `least_conn`.
 
-Os seguintes serviços são iniciados automaticamente:
+```text
+Aplicação web → localhost:8080 → Nginx → backend / backend-replica
+                                      └→ PostgreSQL (usado pelos backends)
+```
 
-- Frontend (Next.js)
-- Backend (Node.js + Express)
-- PostgreSQL
-
-Basta executar:
+Na pasta `ERP`, inicie a infraestrutura com:
 
 ```bash
 docker compose up --build
 ```
+
+A API continua acessível em `http://localhost:8080`, então o endereço local do
+frontend não precisa mudar. A documentação Swagger fica em
+`http://localhost:8080/api-docs`. Para encerrar os containers, use
+`docker compose down`; os dados do PostgreSQL permanecem no volume nomeado.
+
+O Compose espera o PostgreSQL e os backends ficarem saudáveis antes de iniciar
+os serviços dependentes. A tarefa diária que verifica as cobranças mensais roda
+somente na instância `backend`, evitando execução duplicada pela réplica.
+Dentro dos containers, o Compose substitui a URL local do banco pela conexão ao
+serviço `database`, usando as credenciais `POSTGRES_*` do arquivo `ERP/.env`.
+
+O rate limiter da API ainda mantém contadores em memória por instância; assim,
+os limites não são globais quando há mais de uma réplica. Para produção, use
+um armazenamento compartilhado para o rate limiter (por exemplo, Redis) e
+avalie como executar tarefas agendadas em apenas um processo.
 
 ### Segurança da API
 

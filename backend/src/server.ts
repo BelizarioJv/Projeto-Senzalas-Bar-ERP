@@ -47,8 +47,10 @@ app.use("/apiBilling", billingRouter);
 // Middleware de erro
 app.use(errorHandler);
 
-//Inicaliza o contador para Datas e cobranças mensais
-initMonthlyBillingJob();
+// Evita iniciar a mesma tarefa agendada em todas as réplicas do backend.
+if (process.env.ENABLE_MONTHLY_BILLING_JOB !== "false") {
+  initMonthlyBillingJob();
+}
 
 // ---------------------------------
 const PORT = process.env.PORT || 8080;
