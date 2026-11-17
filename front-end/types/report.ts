@@ -1,16 +1,21 @@
-export interface filtersReportRequest {
-  startDate?: string;
-  endDate?: string;
+export type ReportNumeric = number | string;
+
+export interface ReportPeriod {
+  startDate: string;
+  endDate: string;
 }
 
-//Interface para o relatório de compras mensais
+export type filtersReportRequest = Partial<ReportPeriod>;
+
 export interface monthlyPurchasesReportResponse {
-  totalPurchases: number;
-  totalAmount: number;
+  summary: {
+    totalPurchases: number;
+    totalAmount: number;
+  };
   data: {
     id: number;
     createdAt: string;
-    total: number;
+    total: ReportNumeric;
     supplier: {
       id: number;
       name: string;
@@ -21,44 +26,53 @@ export interface monthlyPurchasesReportResponse {
         name: string;
       };
       quantity: number;
-      price: number;
+      price: ReportNumeric;
     }[];
   }[];
 }
 
-//Interface para o relatório de vendas mensais
 export interface monthlySalesReportResponse {
-  totalSales: number;
-  totalAmount: number;
+  summary: {
+    totalSales: number;
+    totalAmount: number;
+  };
   data: {
     id: number;
     createdAt: string;
-    total: number;
+    total: ReportNumeric;
     customer: {
       id: number;
       name: string;
-    };
+    } | null;
     products: {
       product: {
         id: number;
         name: string;
       };
       quantity: number;
-      price: number;
+      price: ReportNumeric;
     }[];
   }[];
 }
 
-//Interface para o relatório financeiro
 export interface financialReportResponse {
-  totalPurchases: number;
-  totalSales: number;
-  totalAmountPurchases: number;
-  totalAmountSales: number;
-  netProfit: number;
+  period: {
+    start: string;
+    end: string;
+  };
+  summary: {
+    salesCount: number;
+    purchasesCount: number;
+    totalRevenue: number;
+    totalExpenses: number;
+    netProfit: number;
+  };
 }
 
-//Interface para o relatório de inventário
+export interface topSellingProductsReportRequest extends ReportPeriod {
+  limit: number;
+}
+
 export interface topSellingProductsReportResponse {
   data: {
     productId: number;

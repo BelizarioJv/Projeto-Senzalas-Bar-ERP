@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const ReportsPeriodQuerySchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+export const ReportsTopProductsQuerySchema = ReportsPeriodQuerySchema.extend({
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
 // Schema para o relatório de compras, incluindo detalhes do fornecedor e produtos comprados
 export const ReportsPurchaseResponseSchema = z.object({
   summary: z.object({
@@ -16,7 +25,7 @@ export const ReportsPurchaseResponseSchema = z.object({
       createdAt: z.string().openapi({
         description: "Data de criação da compra",
       }),
-      total: z.number().nonnegative().openapi({
+      total: z.union([z.number(), z.string()]).openapi({
         description: "Total gasto na compra",
       }),
       supplier: z.object({
@@ -40,7 +49,7 @@ export const ReportsPurchaseResponseSchema = z.object({
           quantity: z.number().int().positive().openapi({
             description: "Quantidade do produto comprado",
           }),
-          price: z.number().nonnegative().openapi({
+          price: z.union([z.number(), z.string()]).openapi({
             description: "Preço unitário do produto na compra",
           }),
         }),
@@ -66,8 +75,7 @@ export const ReportsSalesResponseSchema = z.object({
         .string()
         .openapi({ description: "Data de criação da venda" }),
       total: z
-        .number()
-        .nonnegative()
+        .union([z.number(), z.string()])
         .openapi({ description: "Total faturado na venda" }),
       customer: z
         .object({
@@ -79,7 +87,7 @@ export const ReportsSalesResponseSchema = z.object({
           name: z.string().openapi({ description: "Nome do cliente" }),
         })
         .nullable(),
-      items: z.array(
+      products: z.array(
         z.object({
           product: z.object({
             id: z
@@ -95,8 +103,7 @@ export const ReportsSalesResponseSchema = z.object({
             .positive()
             .openapi({ description: "Quantidade do produto vendido" }),
           price: z
-            .number()
-            .nonnegative()
+            .union([z.number(), z.string()])
             .openapi({ description: "Preço unitário do produto na venda" }),
         }),
       ),
@@ -138,6 +145,17 @@ export const ReportsFinancialSummaryResponseSchema = z.object({
       example: 1540.5,
     }),
   }),
+});
+
+export const ReportsTopProductsResponseSchema = z.object({
+  data: z.array(
+    z.object({
+      productId: z.number().int().positive(),
+      productName: z.string(),
+      totalQuantitySold: z.number().int().nonnegative(),
+      totalRevenue: z.number().nonnegative(),
+    }),
+  ),
 });
 
 const ProductInventorySchema = z.object({

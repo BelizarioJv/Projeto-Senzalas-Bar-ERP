@@ -6,5 +6,6 @@ export const useGetMonthlyPurchasesReport = (filters: filtersReportRequest) => {
   return useQuery({
     queryKey: ["monthlyPurchasesReport", filters],
     queryFn: () => reportService.getMonthlyPurchasesReport(filters),
+    enabled: false,
   });
 };

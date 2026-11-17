@@ -33,7 +33,6 @@ export const SaleRequestSchema = z
         z.object({
           productId: z.number().int().positive(),
           quantity: z.number().int().positive(),
-          price: z.number().positive(),
         }),
       )
       .min(1),

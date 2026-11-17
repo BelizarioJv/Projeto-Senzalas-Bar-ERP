@@ -1,96 +1,94 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { Loading } from "@/components/layout/Loading";
-import { Error } from "@/components/layout/Error";
+import { ScrollText } from "lucide-react";
+import { ReportPeriodFilter } from "@/components/reports/ReportPeriodFilter";
 import { useGetMonthlySaleReport } from "@/hooks/reports/monthlySaleReport";
+import { useReportPeriod } from "@/hooks/reports/useReportPeriod";
 import { Card } from "@/components/ui/card";
-import { ScrollText, Calendar } from "lucide-react";
-import { monthlySalesReportResponse } from "@/types/report";
+import { formatReportCurrency, formatReportDate } from "@/utils/reportFormat";
 import { generateSalesReportPDF } from "@/utils/PDF/monthSalePdf";
 
 export default function MonthSalePage() {
-  // Define o estado inicial para o ano corrente ou um intervalo padrão
-  const [startDate, setStartDate] = useState("2024-01-01");
-  const [endDate, setEndDate] = useState("2024-12-31");
-
-  const { data, isFetching, error, refetch } = useGetMonthlySaleReport({
-    startDate,
-    endDate,
-  });
+  const { period, isValid, setStartDate, setEndDate } = useReportPeriod();
+  const reportQuery = useGetMonthlySaleReport(period);
 
   const handleGenerateReport = async () => {
-    const result = await refetch();
+    if (!isValid) return;
 
-    if (result.data) {
+    const result = await reportQuery.refetch();
+    if (result.isSuccess && result.data) {
       generateSalesReportPDF(result.data);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 space-y-8">
-      {/* Cabeçalho */}
-      <header className="flex flex-col justify-center items-center gap-4">
-        <div className="flex gap-4 items-center">
-          <h1 className="text-4xl font-extrabold text-accent">
-            Relatório - VENDAS MENSAIS
-          </h1>
-          <ScrollText size={50} />
-        </div>
+    <div className="min-h-screen space-y-8 bg-background p-6">
+      <header className="flex items-center justify-center gap-4">
+        <h1 className="text-4xl font-extrabold text-accent">
+          Relatório - Vendas
+        </h1>
+        <ScrollText size={42} />
       </header>
 
-      {/* Filtro de Período */}
-      <Card className="p-6 shadow-md rounded-lg">
-        <div className="flex flex-wrap items-center gap-6 mb-6">
-          <div className="flex items-center gap-2 font-medium">
-            <Calendar size={20} />
-            <span>Filtrar por Período:</span>
+      <ReportPeriodFilter
+        period={period}
+        isValid={isValid}
+        isFetching={reportQuery.isFetching}
+        error={reportQuery.error?.message}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onGenerate={handleGenerateReport}
+      />
+
+      {reportQuery.data && !reportQuery.isError && (
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-5">
+              <p className="text-muted-foreground">Vendas no período</p>
+              <p className="text-2xl font-semibold">
+                {reportQuery.data.summary.totalSales}
+              </p>
+            </Card>
+            <Card className="p-5">
+              <p className="text-muted-foreground">Faturamento</p>
+              <p className="text-2xl font-semibold">
+                {formatReportCurrency(reportQuery.data.summary.totalAmount)}
+              </p>
+            </Card>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label htmlFor="startDate" className="text-sm font-medium">
-              De:
-            </label>
-            <input
-              id="startDate"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border rounded p-2 text-sm bg-background"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label htmlFor="endDate" className="text-sm font-medium">
-              Até:
-            </label>
-            <input
-              id="endDate"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border rounded p-2 text-sm bg-background"
-            />
-          </div>
-        </div>
-
-        {/* Botao para gera r o relatório */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleGenerateReport}
-            disabled={isFetching}
-            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90 transition disabled:opacity-50">
-            {isFetching ? "Gerando..." : "Gerar Relatório"}
-          </button>
-        </div>
-
-        {error && (
-          <p className="text-red-500 mt-4">
-            Erro ao buscar os dados do relatório.
-          </p>
-        )}
-      </Card>
+          <Card className="overflow-x-auto p-6">
+            <h2 className="mb-4 text-xl font-semibold">Vendas encontradas</h2>
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-2">Data</th>
+                  <th className="p-2">Cliente</th>
+                  <th className="p-2">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportQuery.data.data.map((sale) => (
+                  <tr key={sale.id} className="border-b">
+                    <td className="p-2">{formatReportDate(sale.createdAt)}</td>
+                    <td className="p-2">
+                      {sale.customer?.name ?? "Cliente não identificado"}
+                    </td>
+                    <td className="p-2">{formatReportCurrency(sale.total)}</td>
+                  </tr>
+                ))}
+                {reportQuery.data.data.length === 0 && (
+                  <tr>
+                    <td className="p-4 text-center" colSpan={3}>
+                      Nenhuma venda encontrada nesse período.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

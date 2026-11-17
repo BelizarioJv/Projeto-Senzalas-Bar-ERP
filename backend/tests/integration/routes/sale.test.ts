@@ -30,6 +30,7 @@ const transactionClient = {
     update: vi.fn(),
   },
   product: {
+    findMany: vi.fn(),
     findUnique: vi.fn(),
     updateMany: vi.fn(),
     update: vi.fn(),
@@ -90,11 +91,14 @@ describe("sale routes", () => {
   it("creates a sale, deducts inventory, and records the stock movement", async () => {
     const sale = { id: 21, total: 18 };
     vi.mocked(transactionClient.sale.create).mockResolvedValue(sale as never);
-    vi.mocked(transactionClient.product.findUnique).mockResolvedValue({
-      id: 5,
-      name: "Test Beer",
-      currentQuantity: 4,
-    } as never);
+    vi.mocked(transactionClient.product.findMany).mockResolvedValue([
+      {
+        id: 5,
+        name: "Test Beer",
+        currentQuantity: 4,
+        salePrice: 10,
+      },
+    ] as never);
     vi.mocked(transactionClient.product.updateMany).mockResolvedValue({
       count: 1,
     } as never);
@@ -107,7 +111,7 @@ describe("sale routes", () => {
       .send({
         payment: "PIX",
         discountPercent: 10,
-        products: [{ productId: 5, quantity: 2, price: 10 }],
+        products: [{ productId: 5, quantity: 2, price: 0.01 }],
       });
 
     expect(response.status).toBe(201);
@@ -116,12 +120,15 @@ describe("sale routes", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           userId: 7,
-          total: 18,
           discountValue: 2,
           payment: "PIX",
         }),
       }),
     );
+    const savedSale = vi.mocked(transactionClient.sale.create).mock.calls[0][0];
+    expect(savedSale.data.total.toString()).toBe("18");
+    expect(savedSale.data.products.create[0].price.toString()).toBe("10");
+    expect(savedSale.data.products.create[0].subtotal.toString()).toBe("20");
     expect(transactionClient.product.updateMany).toHaveBeenCalledWith({
       where: { id: 5, currentQuantity: { gte: 2 } },
       data: { currentQuantity: { decrement: 2 } },
@@ -140,21 +147,25 @@ describe("sale routes", () => {
     vi.mocked(transactionClient.sale.create).mockResolvedValue({
       id: 21,
     } as never);
-    vi.mocked(transactionClient.product.findUnique).mockResolvedValue({
-      id: 5,
-      name: "Test Beer",
-      currentQuantity: 1,
-    } as never);
+    vi.mocked(transactionClient.product.findMany).mockResolvedValue([
+      {
+        id: 5,
+        name: "Test Beer",
+        currentQuantity: 1,
+        salePrice: 10,
+      },
+    ] as never);
 
     const response = await authenticatedRequest(app)
       .post("/sale")
       .send({
         payment: "DINHEIRO",
-        products: [{ productId: 5, quantity: 2, price: 10 }],
+        products: [{ productId: 5, quantity: 2 }],
       });
 
     expect(response.status).toBe(400);
     expect(response.body.message).toContain("Estoque insuficiente");
+    expect(transactionClient.sale.create).not.toHaveBeenCalled();
     expect(transactionClient.product.updateMany).not.toHaveBeenCalled();
   });
 

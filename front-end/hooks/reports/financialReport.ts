@@ -4,7 +4,8 @@ import { filtersReportRequest } from "@/types/report";
 
 export const useGetFinancialReport = (filters: filtersReportRequest) => {
   return useQuery({
-    queryKey: ["monthlyFinacialReport", filters],
+    queryKey: ["financialReport", filters],
     queryFn: () => reportService.getFinancialReport(filters),
+    enabled: false,
   });
 };

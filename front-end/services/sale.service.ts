@@ -34,9 +34,9 @@ export async function showSale(id: string): Promise<SaleData> {
 }
 
 // Criar venda
-export async function createSale(data: SaleFormData) {
+export async function createSale(data: SaleFormData): Promise<SaleData> {
   try {
-    const response = await api.post<SaleFormData>("/sale", data);
+    const response = await api.post<SaleData>("/sale", data);
     return response.data;
   } catch (error) {
     handleAxiosError(error);

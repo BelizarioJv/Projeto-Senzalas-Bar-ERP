@@ -6,6 +6,7 @@ import {
   monthlySalesReportResponse,
   financialReportResponse,
   topSellingProductsReportResponse,
+  topSellingProductsReportRequest,
 } from "@/types/report";
 
 export const reportService = {
@@ -49,7 +50,9 @@ export const reportService = {
   },
 
   // Relatório de produtos mais vendidos
-  getTopSellingProductsReport: async (filters: filtersReportRequest) => {
+  getTopSellingProductsReport: async (
+    filters: topSellingProductsReportRequest,
+  ) => {
     try {
       const response = await api.get<topSellingProductsReportResponse>(
         "/reports/top-products",

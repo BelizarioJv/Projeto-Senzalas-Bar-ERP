@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { prisma } from "../database/prisma.js";
-import { getStartOfMonth, getEndOfMonth } from "../utils/date.js";
+import { HttpError } from "../errors/HttpError.js";
+import { getReportDateRange } from "../utils/reportDateRange.js";
 
 export class ReportsController {
   /**
@@ -10,15 +11,16 @@ export class ReportsController {
   monthlyPurchasesReport: RequestHandler = async (req, res, next) => {
     try {
       const { startDate, endDate } = req.query;
-
-      const start = startDate ? new Date(String(startDate)) : getStartOfMonth();
-      const end = endDate ? new Date(String(endDate)) : getEndOfMonth();
+      const { start, endExclusive } = getReportDateRange(
+        startDate,
+        endDate,
+      );
 
       const purchases = await prisma.purchase.findMany({
         where: {
           createdAt: {
             gte: start,
-            ...(end && { lte: end }),
+            lt: endExclusive,
           },
         },
         include: {
@@ -58,15 +60,16 @@ export class ReportsController {
   monthlySalesReport: RequestHandler = async (req, res, next) => {
     try {
       const { startDate, endDate } = req.query;
-
-      const start = startDate ? new Date(String(startDate)) : getStartOfMonth();
-      const end = endDate ? new Date(String(endDate)) : getEndOfMonth();
+      const { start, endExclusive } = getReportDateRange(
+        startDate,
+        endDate,
+      );
 
       const sales = await prisma.sale.findMany({
         where: {
           createdAt: {
             gte: start,
-            ...(end && { lte: end }),
+            lt: endExclusive,
           },
         },
         include: {
@@ -106,13 +109,14 @@ export class ReportsController {
   financialSummaryReport: RequestHandler = async (req, res, next) => {
     try {
       const { startDate, endDate } = req.query;
-
-      const start = startDate ? new Date(String(startDate)) : getStartOfMonth();
-      const end = endDate ? new Date(String(endDate)) : getEndOfMonth();
+      const { start, end, endExclusive } = getReportDateRange(
+        startDate,
+        endDate,
+      );
 
       const dateFilter = {
         gte: start,
-        ...(end && { lte: end }),
+        lt: endExclusive,
       };
 
       const [salesAggregate, purchasesAggregate] = await Promise.all([
@@ -189,41 +193,73 @@ export class ReportsController {
 
   /**
    * Relatório de Produtos Mais Vendidos
-   * GET /reports/top-products?limit=10
+   * GET /reports/top-products?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&limit=10
    */
   topProductsReport: RequestHandler = async (req, res, next) => {
     try {
-      const limit = Number(req.query.limit) || 10;
+      const rawLimit = req.query.limit;
+      let limit = 10;
+      if (rawLimit !== undefined) {
+        if (
+          typeof rawLimit !== "string" ||
+          !/^\d+$/.test(rawLimit) ||
+          Number(rawLimit) < 1 ||
+          Number(rawLimit) > 100
+        ) {
+          throw new HttpError(400, "limit deve ser um inteiro entre 1 e 100.");
+        }
+        limit = Number(rawLimit);
+      }
 
-      const topProducts = await prisma.saleProducts.groupBy({
-        by: ["productId"],
-        _sum: {
-          quantity: true,
-        },
-        orderBy: {
-          _sum: {
-            quantity: "desc",
+      const { startDate, endDate } = req.query;
+      const { start, endExclusive } = getReportDateRange(
+        startDate,
+        endDate,
+      );
+      const sales = await prisma.sale.findMany({
+        where: { createdAt: { gte: start, lt: endExclusive } },
+        select: {
+          products: {
+            select: {
+              productId: true,
+              quantity: true,
+              subtotal: true,
+              product: { select: { name: true } },
+            },
           },
         },
-        take: limit,
       });
 
-      // Busca os detalhes dos produtos agrupados
-      const productIds = topProducts.map((p) => p.productId);
-      const productDetails = await prisma.product.findMany({
-        where: { id: { in: productIds } },
-        select: { id: true, name: true, salePrice: true },
-      });
+      const totalsByProduct = new Map<
+        number,
+        { productName: string; totalQuantitySold: number; totalRevenue: number }
+      >();
 
-      const result = topProducts.map((item) => {
-        const product = productDetails.find((p) => p.id === item.productId);
-        return {
-          product,
-          totalSold: item._sum.quantity,
-        };
-      });
+      for (const sale of sales) {
+        for (const item of sale.products) {
+          const totals = totalsByProduct.get(item.productId) ?? {
+            productName: item.product.name,
+            totalQuantitySold: 0,
+            totalRevenue: 0,
+          };
+          totals.totalQuantitySold += item.quantity;
+          totals.totalRevenue += Number(item.subtotal) || 0;
+          totalsByProduct.set(item.productId, totals);
+        }
+      }
 
-      res.json({ data: result });
+      const data = Array.from(totalsByProduct, ([productId, totals]) => ({
+        productId,
+        ...totals,
+      }))
+        .sort(
+          (a, b) =>
+            b.totalQuantitySold - a.totalQuantitySold ||
+            a.productName.localeCompare(b.productName),
+        )
+        .slice(0, limit);
+
+      res.json({ data });
     } catch (error) {
       next(error);
     }

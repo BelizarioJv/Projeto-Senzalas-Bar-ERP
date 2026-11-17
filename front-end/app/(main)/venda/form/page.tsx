@@ -59,7 +59,7 @@ export default function CreateSaleForm() {
 
               <select
                 {...register("customerId", {
-                  valueAsNumber: true,
+                  setValueAs: (value) => (value === "" ? undefined : Number(value)),
                 })}
                 className="
                     mt-1
@@ -103,7 +103,7 @@ export default function CreateSaleForm() {
                   {productsQuery.data?.data.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name} - R$
-                      {Number(product.costPrice).toFixed(2)}
+                      {Number(product.salePrice).toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -188,7 +188,7 @@ export default function CreateSaleForm() {
 
                         <p className="text-sm text-muted-foreground">
                           {item?.quantity} x R$
-                          {Number(item?.price || 0).toFixed(2)}
+                          {Number(product?.salePrice || 0).toFixed(2)}
                         </p>
                       </div>
 
@@ -197,7 +197,7 @@ export default function CreateSaleForm() {
                           R$
                           {(
                             Number(item?.quantity || 0) *
-                            Number(item?.price || 0)
+                            Number(product?.salePrice || 0)
                           ).toFixed(2)}
                         </span>
 
@@ -219,10 +219,6 @@ export default function CreateSaleForm() {
                         {...register(`products.${index}.quantity`)}
                       />
 
-                      <input
-                        type="hidden"
-                        {...register(`products.${index}.price`)}
-                      />
                     </div>
                   );
                 })}

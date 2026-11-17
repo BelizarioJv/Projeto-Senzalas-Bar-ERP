@@ -113,14 +113,7 @@ export class SaleController {
 
       const userId = req.user;
 
-      const subtotal = body.products.reduce(
-        (acc, product) => acc + product.quantity * product.price,
-        0,
-      );
-
       const discountPercent = Number(body.discountPercent || 0);
-      const discountValue = (subtotal * discountPercent) / 100;
-      const total = subtotal - discountValue;
 
       // Executa toda a operação em uma transação isolada
       const saleTransaction = await prisma.$transaction(async (tx) => {
@@ -137,22 +130,70 @@ export class SaleController {
           }
         }
 
+        const products = await tx.product.findMany({
+          where: {
+            id: { in: body.products.map((product) => product.productId) },
+          },
+          select: {
+            id: true,
+            name: true,
+            currentQuantity: true,
+            salePrice: true,
+          },
+        });
+        const productsById = new Map(
+          products.map((product) => [product.id, product]),
+        );
+        const saleItems = body.products.map((item) => {
+          const product = productsById.get(item.productId);
+          if (!product) {
+            throw new HttpError(404, `Produto #${item.productId} não encontrado`);
+          }
+
+          if (product.currentQuantity < item.quantity) {
+            throw new HttpError(
+              400,
+              `Estoque insuficiente para o produto "${product.name}". Atual: ${product.currentQuantity}, Solicitado: ${item.quantity}`,
+            );
+          }
+
+          const unitPrice = new Prisma.Decimal(product.salePrice);
+          return {
+            productId: product.id,
+            productName: product.name,
+            quantity: item.quantity,
+            unitPrice,
+            subtotal: unitPrice.mul(item.quantity),
+            currentQuantity: product.currentQuantity,
+          };
+        });
+
+        const subtotal = saleItems.reduce(
+          (acc, item) => acc.plus(item.subtotal),
+          new Prisma.Decimal(0),
+        );
+        const discountValue = subtotal
+          .mul(discountPercent)
+          .div(100)
+          .toDecimalPlaces(2);
+        const total = subtotal.minus(discountValue).toDecimalPlaces(2);
+
         // 2. Cria a venda com os dados recebidos (e vincula o customerId se houver)
         const sale = await tx.sale.create({
           data: {
             discountPercent,
-            discountValue,
+            discountValue: discountValue.toNumber(),
             total,
             payment: body.payment,
             observation: body.observation,
             userId: userId,
             customerId: body.customerId || null,
             products: {
-              create: body.products.map((p) => ({
-                productId: p.productId,
-                quantity: p.quantity,
-                price: p.price,
-                subtotal: p.quantity * p.price,
+              create: saleItems.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.unitPrice,
+                subtotal: item.subtotal,
               })),
             },
           },
@@ -176,33 +217,18 @@ export class SaleController {
         }
 
         // 4. Verificação de estoque, decremento e geração do histórico de movimentação
-        for (const p of body.products) {
-          const product = await tx.product.findUnique({
-            where: { id: p.productId },
-          });
-
-          if (!product) {
-            throw new HttpError(404, `Produto #${p.productId} não encontrado`);
-          }
-
-          if (product.currentQuantity < p.quantity) {
-            throw new HttpError(
-              400,
-              `Estoque insuficiente para o produto "${product.name}". Atual: ${product.currentQuantity}, Solicitado: ${p.quantity}`,
-            );
-          }
-
+        for (const item of saleItems) {
           // Atualizando a quantidade do produto no estoque
           const updatedProduct = await tx.product.updateMany({
             where: {
-              id: p.productId,
+              id: item.productId,
               currentQuantity: {
-                gte: p.quantity,
+                gte: item.quantity,
               },
             },
             data: {
               currentQuantity: {
-                decrement: p.quantity,
+                decrement: item.quantity,
               },
             },
           });
@@ -214,10 +240,10 @@ export class SaleController {
           // Criando movimentação de estoque para auditoria
           await tx.stockMovement.create({
             data: {
-              productId: p.productId,
+              productId: item.productId,
               saleId: sale.id,
               movementType: "SAIDA",
-              quantity: p.quantity,
+              quantity: item.quantity,
               observations: `Venda #${sale.id}${body.payment === "FIADO" ? " (Adicionado ao Fiado)" : ""}`,
             },
           });

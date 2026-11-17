@@ -32,7 +32,12 @@ export function useSaleForm() {
   const products = watch("products") ?? [];
 
   const total =
-    products.reduce((acc, item) => acc + item.quantity * item.price, 0) ?? 0;
+    products.reduce((acc, item) => {
+      const product = productsQuery.data?.data.find(
+        (availableProduct) => availableProduct.id === item.productId,
+      );
+      return acc + item.quantity * Number(product?.salePrice ?? 0);
+    }, 0) ?? 0;
 
   function handleAddProduct(selectedProductId: string, quantity: number) {
     const product = productsQuery.data?.data.find(
@@ -53,7 +58,6 @@ export function useSaleForm() {
     append({
       productId: product.id,
       quantity,
-      price: Number(product.costPrice),
     });
   }
 

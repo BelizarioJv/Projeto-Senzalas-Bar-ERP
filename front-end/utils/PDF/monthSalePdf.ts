@@ -10,7 +10,11 @@ export function generateSalesReportPDF(report: monthlySalesReportResponse) {
 
   doc.setFontSize(11);
 
-  doc.text(`Faturamento: R$ ${Number(report.totalAmount).toFixed(2)}`, 20, 42);
+  doc.text(
+    `Vendas: ${report.summary.totalSales} | Faturamento: R$ ${Number(report.summary.totalAmount).toFixed(2)}`,
+    20,
+    42,
+  );
 
   autoTable(doc, {
     startY: 55,
@@ -19,7 +23,7 @@ export function generateSalesReportPDF(report: monthlySalesReportResponse) {
 
     body: report.data.map((sale) => [
       new Date(sale.createdAt).toLocaleDateString(),
-      sale.customer.name,
+      sale.customer?.name ?? "Cliente não identificado",
       `R$ ${Number(sale.total).toFixed(2)}`,
     ]),
 
